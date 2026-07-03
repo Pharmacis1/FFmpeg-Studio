@@ -1,9 +1,14 @@
 import os
+import shutil
 import subprocess
 import imageio_ffmpeg
 
-ffmpeg_exe = imageio_ffmpeg.get_ffmpeg_exe()
-print(f"Found ffmpeg at: {ffmpeg_exe}")
+ffmpeg_orig = imageio_ffmpeg.get_ffmpeg_exe()
+print(f"Found ffmpeg at: {ffmpeg_orig}")
+
+# Copy it to 'ffmpeg.exe' locally so PyInstaller bundles it with that exact name
+ffmpeg_exe = 'ffmpeg.exe'
+shutil.copy(ffmpeg_orig, ffmpeg_exe)
 
 # Windows PyInstaller command
 cmd = [
