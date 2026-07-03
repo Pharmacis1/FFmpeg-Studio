@@ -109,3 +109,18 @@ async function startProcess(type) {
         showMessage('Произошла ошибка при отправке запроса', true);
     }
 }
+
+async function shutdownApp() {
+    if (confirm('Вы уверены, что хотите закрыть программу?')) {
+        try {
+            await fetch('/api/shutdown', { method: 'POST' });
+        } catch (e) {} // Ошибка может возникнуть, если сервер отключился до ответа
+        
+        document.body.innerHTML = '<div style="display: flex; justify-content: center; align-items: center; height: 100vh; flex-direction: column;"><h2 style="color: white;">Программа успешно закрыта</h2><p style="color: #94a3b8;">Вы можете закрыть эту вкладку.</p></div>';
+        
+        // Пытаемся закрыть вкладку
+        setTimeout(() => {
+            window.close();
+        }, 500);
+    }
+}

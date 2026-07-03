@@ -181,6 +181,12 @@ def compose():
     success, msg = run_ffmpeg(cmd)
     return jsonify({"success": success, "message": msg})
 
+@app.route('/api/shutdown', methods=['POST'])
+def shutdown():
+    # Attempt to forcefully close the background server
+    threading.Timer(0.5, lambda: os._exit(0)).start()
+    return jsonify({"success": True, "message": "Выключение сервера..."})
+
 def start_browser():
     webbrowser.open('http://127.0.0.1:5000')
 
