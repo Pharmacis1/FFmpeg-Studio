@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FFmpeg Studio</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="background-anim"></div>
+    
+    <div class="container glass">
+        <header>
+            <h1>FFmpeg <span>Studio</span></h1>
+            <p>Мощный инструмент для работы с медиафайлами</p>
+        </header>
+
+        <nav class="tabs">
+            <button class="tab-btn active" data-target="convert">Конвертация</button>
+            <button class="tab-btn" data-target="audio">Звук</button>
+            <button class="tab-btn" data-target="split">Сплит (Видеостена)</button>
+            <button class="tab-btn" data-target="compose">Картинка + Видео</button>
+        </nav>
+
+        <div class="tab-content active" id="convert">
+            <h2>Конвертация и сжатие видео</h2>
+            <div class="form-group">
+                <label>Исходное видео:</label>
+                <div class="file-input-group">
+                    <input type="text" id="conv-input" readonly placeholder="Выберите файл...">
+                    <button class="btn-secondary" onclick="browseInput('conv-input', 'video')">Обзор</button>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Куда сохранить (с новым форматом, например .mp4, .avi):</label>
+                <div class="file-input-group">
+                    <input type="text" id="conv-output" readonly placeholder="Выберите файл...">
+                    <button class="btn-secondary" onclick="browseOutput('conv-output')">Обзор</button>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Качество (CRF): <span id="crf-val">23</span> (меньше - лучше)</label>
+                <input type="range" id="conv-quality" min="0" max="51" value="23" oninput="document.getElementById('crf-val').innerText=this.value">
+            </div>
+            <button class="btn-primary" onclick="startProcess('convert')">Запустить</button>
+        </div>
+
+        <div class="tab-content" id="audio">
+            <h2>Извлечение аудио дорожки</h2>
+            <div class="form-group">
+                <label>Исходное видео:</label>
+                <div class="file-input-group">
+                    <input type="text" id="audio-input" readonly placeholder="Выберите файл...">
+                    <button class="btn-secondary" onclick="browseInput('audio-input', 'video')">Обзор</button>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Сохранить как (например .mp3):</label>
+                <div class="file-input-group">
+                    <input type="text" id="audio-output" readonly placeholder="Выберите файл...">
+                    <button class="btn-secondary" onclick="browseOutput('audio-output', '.mp3')">Обзор</button>
+                </div>
+            </div>
+            <button class="btn-primary" onclick="startProcess('audio')">Извлечь</button>
+        </div>
+
+        <div class="tab-content" id="split">
+            <h2>Нарезка видео по горизонтали</h2>
+            <div class="form-group">
+                <label>Исходное видео:</label>
+                <div class="file-input-group">
+                    <input type="text" id="split-input" readonly placeholder="Выберите файл...">
+                    <button class="btn-secondary" onclick="browseInput('split-input', 'video')">Обзор</button>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Папка для сохранения частей:</label>
+                <div class="file-input-group">
+                    <input type="text" id="split-output" readonly placeholder="Выберите папку...">
+                    <button class="btn-secondary" onclick="browseOutputDir('split-output')">Обзор</button>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Количество частей:</label>
+                <input type="number" id="split-parts" value="4" min="2" max="10">
+            </div>
+            <button class="btn-primary" onclick="startProcess('split')">Разрезать</button>
+        </div>
+
+        <div class="tab-content" id="compose">
+            <h2>Видео + Картинка</h2>
+            <div class="form-group">
+                <label>Видео:</label>
+                <div class="file-input-group">
+                    <input type="text" id="comp-video" readonly placeholder="Выберите видео...">
+                    <button class="btn-secondary" onclick="browseInput('comp-video', 'video')">Обзор</button>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Картинка:</label>
+                <div class="file-input-group">
+                    <input type="text" id="comp-image" readonly placeholder="Выберите картинку...">
+                    <button class="btn-secondary" onclick="browseInput('comp-image', 'image')">Обзор</button>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Ориентация:</label>
+                <select id="comp-orientation">
+                    <option value="landscape">Горизонтально (Картинка слева, Видео справа, 1920x1080)</option>
+                    <option value="portrait">Вертикально (Картинка сверху, Видео снизу, 1080x1920)</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Сохранить как (.mp4):</label>
+                <div class="file-input-group">
+                    <input type="text" id="comp-output" readonly placeholder="Выберите файл...">
+                    <button class="btn-secondary" onclick="browseOutput('comp-output', '.mp4')">Обзор</button>
+                </div>
+            </div>
+            <button class="btn-primary" onclick="startProcess('compose')">Создать</button>
+        </div>
+
+        <div id="loader" class="loader-container" style="display: none;">
+            <div class="spinner"></div>
+            <p>Выполняется обработка, пожалуйста, подождите...</p>
+        </div>
+        
+        <div id="result-message" class="message" style="display: none;"></div>
+    </div>
+
+    <script src="/static/script.js"></script>
+</body>
+</html>
