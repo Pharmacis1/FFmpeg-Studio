@@ -3,7 +3,7 @@ import sys
 import subprocess
 import threading
 import webbrowser
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, render_template, request, jsonify, send_file
 import tkinter as tk
 from tkinter import filedialog
 
@@ -67,6 +67,14 @@ def browse_output_dir():
     path = filedialog.askdirectory(title="Выберите папку для сохранения")
     root.destroy()
     return jsonify({"path": path})
+
+@app.route('/media')
+def serve_media():
+    path = request.args.get('path')
+    if not path or not os.path.exists(path):
+        return "Not found", 404
+    # send_file supports byte-range requests out of the box in modern Flask/Werkzeug
+    return send_file(path)
 
 def run_ffmpeg(cmd):
     try:

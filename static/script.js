@@ -15,6 +15,18 @@ async function browseInput(inputId, type) {
     const data = await res.json();
     if (data.path) {
         document.getElementById(inputId).value = data.path;
+        
+        // Показываем превью
+        document.getElementById('preview-container').style.display = 'block';
+        if (type === 'video') {
+            document.getElementById('video-preview').style.display = 'inline-block';
+            document.getElementById('image-preview').style.display = 'none';
+            document.getElementById('video-preview').src = `/media?path=${encodeURIComponent(data.path)}`;
+        } else if (type === 'image') {
+            document.getElementById('image-preview').style.display = 'inline-block';
+            document.getElementById('video-preview').style.display = 'none';
+            document.getElementById('image-preview').src = `/media?path=${encodeURIComponent(data.path)}`;
+        }
     }
 }
 
