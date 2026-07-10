@@ -335,7 +335,7 @@ function handleDragEnd(e) {
 }
 
 function updateMultiLayout() {
-    const layout = document.getElementById('multi-layout') ? document.getElementById('multi-layout').value : 'grid';
+    const layout = document.getElementById('multi-layout') ? document.getElementById('multi-layout').value : 'row';
     const container = document.getElementById('multi-video-container');
     if (!container) return;
     
