@@ -17,70 +17,77 @@
             <button class="btn-secondary" style="position: absolute; top: 0; right: 0; background: rgba(239, 68, 68, 0.2); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3);" onclick="shutdownApp()">Выход</button>
         </header>
 
-        <div class="preview-container" id="preview-container" style="display: none;">
-            <video id="video-preview" controls style="display: none;"></video>
-            <img id="image-preview" style="display: none;">
+        <!-- Global Input Block -->
+        <div id="global-input-section" style="margin-bottom: 30px; border-bottom: 1px solid rgba(255, 255, 255, 0.1); padding-bottom: 20px;">
+            <h2>Исходные медиафайлы</h2>
+            <div class="form-group">
+                <div class="file-input-group">
+                    <input type="text" id="global-input" readonly placeholder="Выберите видеофайлы (один или несколько)...">
+                    <button class="btn-secondary" onclick="browseGlobalInputs()">Обзор</button>
+                </div>
+            </div>
+            
+            <div class="form-group" style="margin-top: 15px; display: none;" id="global-layout-control">
+                <label>Расположение предпросмотра:</label>
+                <select id="multi-layout" onchange="updateMultiLayout()">
+                    <option value="row">В один ряд</option>
+                    <option value="grid">Сетка (автоматически)</option>
+                </select>
+            </div>
+
+            <div style="text-align: center; margin-top: 15px; display: none;" id="global-playback-controls">
+                <button class="btn-primary" onclick="playAllVideos()">▶ Воспроизвести все</button>
+                <button class="btn-secondary" onclick="pauseAllVideos()">⏸ Пауза</button>
+                <button class="btn-secondary" onclick="stopAllVideos()">⏹ Стоп</button>
+            </div>
+
+            <div class="multi-video-container" id="global-video-container" style="display: flex; gap: 10px; margin-top: 20px; flex-wrap: wrap; justify-content: center;">
+                <!-- Динамически добавляемые видео -->
+            </div>
         </div>
 
         <nav class="tabs">
             <button class="tab-btn active" data-target="convert">Конвертация</button>
-            <button class="tab-btn" data-target="audio">Звук</button>
             <button class="tab-btn" data-target="split">Сплит (Видеостена)</button>
-            <button class="tab-btn" data-target="compose">Картинка + Видео</button>
-            <button class="tab-btn" data-target="multi-preview">Мульти-плеер</button>
         </nav>
 
         <div class="tab-content active" id="convert">
             <h2>Конвертация и сжатие видео</h2>
             <div class="form-group">
-                <label>Исходное видео:</label>
+                <label>Куда сохранить (выберите папку):</label>
                 <div class="file-input-group">
-                    <input type="text" id="conv-input" readonly placeholder="Выберите файл...">
-                    <button class="btn-secondary" onclick="browseInput('conv-input', 'video')">Обзор</button>
-                </div>
-            </div>
-            <div class="form-group">
-                <label>Куда сохранить (с новым форматом, например .mp4, .avi):</label>
-                <div class="file-input-group">
-                    <input type="text" id="conv-output" readonly placeholder="Выберите файл...">
-                    <button class="btn-secondary" onclick="browseOutput('conv-output')">Обзор</button>
+                    <input type="text" id="conv-output" readonly placeholder="Выберите папку...">
+                    <button class="btn-secondary" onclick="browseOutputDir('conv-output')">Обзор</button>
                 </div>
             </div>
             <div class="form-group">
                 <label>Качество (CRF): <span id="crf-val">23</span> (меньше - лучше)</label>
                 <input type="range" id="conv-quality" min="0" max="51" value="23" oninput="document.getElementById('crf-val').innerText=this.value">
             </div>
-            <button class="btn-primary" onclick="startProcess('convert')">Запустить</button>
-        </div>
+            
+            <!-- New settings -->
+            <div class="form-group" style="display: flex; align-items: center; gap: 10px;">
+                <input type="checkbox" id="conv-remove-audio" style="width: 20px; height: 20px;">
+                <label for="conv-remove-audio" style="margin-bottom: 0;">Удалить аудио (без звука)</label>
+            </div>
+            
+            <div class="form-group">
+                <label>Частота кадров (FPS):</label>
+                <select id="conv-fps">
+                    <option value="">Без изменений</option>
+                    <option value="24">24</option>
+                    <option value="25">25</option>
+                    <option value="30">30</option>
+                    <option value="50">50</option>
+                    <option value="60">60</option>
+                </select>
+            </div>
 
-        <div class="tab-content" id="audio">
-            <h2>Извлечение аудио дорожки</h2>
-            <div class="form-group">
-                <label>Исходное видео:</label>
-                <div class="file-input-group">
-                    <input type="text" id="audio-input" readonly placeholder="Выберите файл...">
-                    <button class="btn-secondary" onclick="browseInput('audio-input', 'video')">Обзор</button>
-                </div>
-            </div>
-            <div class="form-group">
-                <label>Сохранить как (например .mp3):</label>
-                <div class="file-input-group">
-                    <input type="text" id="audio-output" readonly placeholder="Выберите файл...">
-                    <button class="btn-secondary" onclick="browseOutput('audio-output', '.mp3')">Обзор</button>
-                </div>
-            </div>
-            <button class="btn-primary" onclick="startProcess('audio')">Извлечь</button>
+            <button class="btn-primary" onclick="startProcess('convert')">Запустить</button>
         </div>
 
         <div class="tab-content" id="split">
             <h2>Нарезка видео по горизонтали</h2>
-            <div class="form-group">
-                <label>Исходное видео:</label>
-                <div class="file-input-group">
-                    <input type="text" id="split-input" readonly placeholder="Выберите файл...">
-                    <button class="btn-secondary" onclick="browseInput('split-input', 'video', true)">Обзор</button>
-                </div>
-            </div>
             <div class="form-group">
                 <label>Папка для сохранения частей:</label>
                 <div class="file-input-group">
@@ -89,7 +96,7 @@
                 </div>
             </div>
             <div class="form-group">
-                <label>Количество частей:</label>
+                <label>Количество частей (для всех файлов):</label>
                 <input type="number" id="split-parts" value="4" min="2" max="10" onchange="generateSplitPreview()">
             </div>
 
@@ -100,74 +107,12 @@
                     <button class="btn-secondary" onclick="pauseSplitVideos()">⏸ Пауза</button>
                     <button class="btn-secondary" onclick="stopSplitVideos()">⏹ Стоп</button>
                 </div>
-                <div class="multi-video-container" id="split-video-container" style="display: flex; gap: 10px; flex-wrap: nowrap; overflow-x: hidden; justify-content: center;">
-                    <!-- Динамически добавляемые видео -->
+                <div id="split-videos-wrapper" style="display: flex; flex-direction: column; gap: 30px;">
+                    <!-- Динамически добавляемые группы видео -->
                 </div>
             </div>
 
             <button class="btn-primary" style="margin-top: 15px;" onclick="startProcess('split')">Разрезать</button>
-        </div>
-
-        <div class="tab-content" id="compose">
-            <h2>Видео + Картинка</h2>
-            <div class="form-group">
-                <label>Видео:</label>
-                <div class="file-input-group">
-                    <input type="text" id="comp-video" readonly placeholder="Выберите видео...">
-                    <button class="btn-secondary" onclick="browseInput('comp-video', 'video')">Обзор</button>
-                </div>
-            </div>
-            <div class="form-group">
-                <label>Картинка:</label>
-                <div class="file-input-group">
-                    <input type="text" id="comp-image" readonly placeholder="Выберите картинку...">
-                    <button class="btn-secondary" onclick="browseInput('comp-image', 'image')">Обзор</button>
-                </div>
-            </div>
-            <div class="form-group">
-                <label>Ориентация:</label>
-                <select id="comp-orientation">
-                    <option value="landscape">Горизонтально (Картинка слева, Видео справа, 1920x1080)</option>
-                    <option value="portrait">Вертикально (Картинка сверху, Видео снизу, 1080x1920)</option>
-                </select>
-            </div>
-            <div class="form-group">
-                <label>Сохранить как (.mp4):</label>
-                <div class="file-input-group">
-                    <input type="text" id="comp-output" readonly placeholder="Выберите файл...">
-                    <button class="btn-secondary" onclick="browseOutput('comp-output', '.mp4')">Обзор</button>
-                </div>
-            </div>
-            <button class="btn-primary" onclick="startProcess('compose')">Создать</button>
-        </div>
-
-        <div class="tab-content" id="multi-preview">
-            <h2>Синхронный просмотр нескольких видео</h2>
-            <div class="form-group">
-                <label>Выберите видеофайлы:</label>
-                <div class="file-input-group">
-                    <input type="text" id="multi-preview-input" readonly placeholder="Выберите несколько файлов...">
-                    <button class="btn-secondary" onclick="browseMultipleInputs()">Обзор</button>
-                </div>
-            </div>
-            
-            <div class="form-group" style="margin-top: 15px;">
-                <label>Расположение:</label>
-                <select id="multi-layout" onchange="updateMultiLayout()">
-                    <option value="row">В один ряд</option>
-                    <option value="grid">Сетка (автоматически)</option>
-                </select>
-            </div>
-
-            <div style="text-align: center; margin-top: 15px;">
-                <button class="btn-primary" onclick="playAllVideos()">▶ Воспроизвести все</button>
-                <button class="btn-secondary" onclick="pauseAllVideos()">⏸ Пауза</button>
-                <button class="btn-secondary" onclick="stopAllVideos()">⏹ Стоп</button>
-            </div>
-
-            <div class="multi-video-container" id="multi-video-container" style="display: flex; gap: 10px; margin-top: 20px; flex-wrap: wrap; justify-content: center;">
-                <!-- Динамически добавляемые видео -->
-            </div>
         </div>
 
         <div id="loader" class="loader-container" style="display: none;">
