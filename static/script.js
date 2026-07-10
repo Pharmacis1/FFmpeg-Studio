@@ -51,19 +51,8 @@ function renderGlobalFiles() {
             item.className = 'global-file-item';
             
             // If it was selected before, keep it selected. If it's new, select it by default.
-            if (currentlySelected.includes(path) || !currentlySelected.length) {
-                // Wait, if currentlySelected is empty, it means we might have unselected everything, 
-                // but for newly added files, let's just select them by default if we want.
-                // Let's make a simple rule: everything is selected by default if we just re-rendered 
-                // without previous selections.
-            }
-            // Better: always select new files, preserve old selections.
-            if (currentlySelected.includes(path) || !document.querySelector('.global-file-item')) {
+            if (currentlySelected.includes(path)) {
                  item.classList.add('selected');
-            } else if (!currentlySelected.includes(path) && currentlySelected.length > 0) {
-                // it's a new file? actually it wasn't selected. Wait, if it wasn't rendered, it wasn't selected.
-                // Let's just default to selected for any new file.
-                // Wait, if it's already in globalFiles but was unselected, it shouldn't become selected.
             }
             
             item.dataset.path = path;
@@ -107,13 +96,7 @@ function renderGlobalFiles() {
             
             container.appendChild(item);
             
-            // Select by default if it's newly added and we just created the element
-            if (!currentlySelected.includes(path) && !item.classList.contains('selected')) {
-                // If the user adds a new file, let's make it selected automatically.
-                // But only if it's really new. We can track it by maintaining a Set of known files.
-                // For simplicity, let's select all new files.
-                item.classList.add('selected');
-            }
+            // No auto-selection by default
         });
     }
     
