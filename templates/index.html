@@ -138,6 +138,14 @@
                 </div>
             </div>
             
+            <div class="form-group" style="margin-top: 15px;">
+                <label>Расположение:</label>
+                <select id="multi-layout" onchange="updateMultiLayout()">
+                    <option value="grid">Сетка (автоматически)</option>
+                    <option value="row">В один ряд</option>
+                </select>
+            </div>
+
             <div style="text-align: center; margin-top: 15px;">
                 <button class="btn-primary" onclick="playAllVideos()">▶ Воспроизвести все</button>
                 <button class="btn-secondary" onclick="pauseAllVideos()">⏸ Пауза</button>

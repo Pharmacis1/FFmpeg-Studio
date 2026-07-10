@@ -55,17 +55,48 @@ async function browseMultipleInputs() {
         const container = document.getElementById('multi-video-container');
         container.innerHTML = ''; // Очистка предыдущих
         
-        data.paths.forEach(path => {
+        data.paths.forEach((path, index) => {
+            const wrapper = document.createElement('div');
+            wrapper.className = 'video-wrapper';
+            wrapper.draggable = true;
+            wrapper.dataset.index = index;
+            wrapper.style.display = 'flex';
+            wrapper.style.flexDirection = 'column';
+            wrapper.style.alignItems = 'center';
+            wrapper.style.backgroundColor = 'rgba(255, 255, 255, 0.05)';
+            wrapper.style.padding = '10px';
+            wrapper.style.borderRadius = '8px';
+            wrapper.style.cursor = 'grab';
+            wrapper.style.boxSizing = 'border-box';
+            
+            wrapper.addEventListener('dragstart', handleDragStart);
+            wrapper.addEventListener('dragover', handleDragOver);
+            wrapper.addEventListener('drop', handleDrop);
+            wrapper.addEventListener('dragenter', handleDragEnter);
+            wrapper.addEventListener('dragleave', handleDragLeave);
+            wrapper.addEventListener('dragend', handleDragEnd);
+
             const video = document.createElement('video');
             video.src = `/media?path=${encodeURIComponent(path)}`;
-            video.controls = false; // Убираем контролы для синхронного управления
-            video.style.width = data.paths.length > 1 ? `calc(${100 / Math.ceil(Math.sqrt(data.paths.length))}% - 10px)` : '100%';
-            video.style.minWidth = '200px';
-            video.style.maxWidth = '100%';
+            video.controls = false;
+            video.style.width = '100%';
             video.style.backgroundColor = '#000';
+            video.style.borderRadius = '4px';
             video.className = 'synced-video';
-            container.appendChild(video);
+            
+            const title = document.createElement('span');
+            title.innerText = path.split('\\').pop().split('/').pop();
+            title.style.marginTop = '8px';
+            title.style.fontSize = '12px';
+            title.style.color = '#cbd5e1';
+            title.style.wordBreak = 'break-all';
+            title.style.textAlign = 'center';
+
+            wrapper.appendChild(video);
+            wrapper.appendChild(title);
+            container.appendChild(wrapper);
         });
+        updateMultiLayout();
     }
 }
 
@@ -160,5 +191,87 @@ async function shutdownApp() {
         setTimeout(() => {
             window.close();
         }, 500);
+    }
+}
+
+let draggedItem = null;
+
+function handleDragStart(e) {
+    draggedItem = this;
+    e.dataTransfer.effectAllowed = 'move';
+    // Firefox требует, чтобы что-то было установлено
+    e.dataTransfer.setData('text/plain', this.dataset.index);
+    setTimeout(() => this.style.opacity = '0.4', 0);
+}
+
+function handleDragOver(e) {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    return false;
+}
+
+function handleDragEnter(e) {
+    e.preventDefault();
+    this.style.border = '2px dashed #f87171';
+}
+
+function handleDragLeave(e) {
+    this.style.border = 'none';
+}
+
+function handleDrop(e) {
+    e.stopPropagation();
+    this.style.border = 'none';
+    if (draggedItem !== this) {
+        const container = document.getElementById('multi-video-container');
+        const allItems = [...container.querySelectorAll('.video-wrapper')];
+        const draggedIndex = allItems.indexOf(draggedItem);
+        const targetIndex = allItems.indexOf(this);
+        
+        if (draggedIndex < targetIndex) {
+            this.parentNode.insertBefore(draggedItem, this.nextSibling);
+        } else {
+            this.parentNode.insertBefore(draggedItem, this);
+        }
+    }
+    return false;
+}
+
+function handleDragEnd(e) {
+    this.style.opacity = '1';
+    document.querySelectorAll('.video-wrapper').forEach(item => {
+        item.style.border = 'none';
+    });
+}
+
+function updateMultiLayout() {
+    const layout = document.getElementById('multi-layout') ? document.getElementById('multi-layout').value : 'grid';
+    const container = document.getElementById('multi-video-container');
+    if (!container) return;
+    
+    const wrappers = container.querySelectorAll('.video-wrapper');
+    
+    if (layout === 'row') {
+        container.style.flexWrap = 'nowrap';
+        container.style.overflowX = 'auto';
+        container.style.justifyContent = 'flex-start';
+        wrappers.forEach(w => {
+            w.style.width = '300px';
+            w.style.minWidth = '300px';
+            w.style.flexShrink = '0';
+        });
+    } else {
+        container.style.flexWrap = 'wrap';
+        container.style.overflowX = 'visible';
+        container.style.justifyContent = 'center';
+        
+        const count = wrappers.length;
+        const flexBasis = count > 1 ? `calc(${100 / Math.ceil(Math.sqrt(count))}% - 20px)` : '100%';
+        
+        wrappers.forEach(w => {
+            w.style.width = flexBasis;
+            w.style.minWidth = '200px';
+            w.style.flexShrink = '1';
+        });
     }
 }
