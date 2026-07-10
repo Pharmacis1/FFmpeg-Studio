@@ -142,6 +142,7 @@ def split_video():
     input_file = data.get('input')
     output_dir = data.get('output_dir')
     parts = int(data.get('parts', 4))
+    custom_names = data.get('custom_names', [])
     
     if not input_file or not output_dir:
         return jsonify({"success": False, "message": "Выберите файл и папку"})
@@ -157,7 +158,16 @@ def split_video():
         # crop=w/4:h:w/4*i:0
         filter_complex += f"[0:v]crop=iw/{parts}:ih:(iw/{parts})*{i}:0[v{i}];"
         maps.extend(['-map', f'[v{i}]'])
-        output_files.append(os.path.join(output_dir, f"{base_name}_part{i+1}.mp4"))
+        
+        if custom_names and i < len(custom_names) and custom_names[i]:
+            part_name = custom_names[i]
+        else:
+            part_name = f"{base_name}_part{i+1}"
+            
+        if not part_name.endswith('.mp4'):
+            part_name += '.mp4'
+            
+        output_files.append(os.path.join(output_dir, part_name))
         
     # We need to run ffmpeg to output multiple files.
     # ffmpeg -i in.mp4 -filter_complex "[0:v]...[v0];..." -map "[v0]" out1.mp4 -map "[v1]" out2.mp4

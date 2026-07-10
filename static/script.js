@@ -10,24 +10,110 @@ document.querySelectorAll('.tab-btn').forEach(btn => {
     });
 });
 
-async function browseInput(inputId, type) {
+async function browseInput(inputId, type, isSplit = false) {
     const res = await fetch(`/api/browse_input?type=${type}`);
     const data = await res.json();
     if (data.path) {
         document.getElementById(inputId).value = data.path;
         
-        // Показываем превью
-        document.getElementById('preview-container').style.display = 'block';
-        if (type === 'video') {
-            document.getElementById('video-preview').style.display = 'inline-block';
-            document.getElementById('image-preview').style.display = 'none';
-            document.getElementById('video-preview').src = `/media?path=${encodeURIComponent(data.path)}`;
-        } else if (type === 'image') {
-            document.getElementById('image-preview').style.display = 'inline-block';
-            document.getElementById('video-preview').style.display = 'none';
-            document.getElementById('image-preview').src = `/media?path=${encodeURIComponent(data.path)}`;
+        if (isSplit) {
+            generateSplitPreview();
+        } else {
+            // Показываем превью
+            document.getElementById('preview-container').style.display = 'block';
+            if (type === 'video') {
+                document.getElementById('video-preview').style.display = 'inline-block';
+                document.getElementById('image-preview').style.display = 'none';
+                document.getElementById('video-preview').src = `/media?path=${encodeURIComponent(data.path)}`;
+            } else if (type === 'image') {
+                document.getElementById('image-preview').style.display = 'inline-block';
+                document.getElementById('video-preview').style.display = 'none';
+                document.getElementById('image-preview').src = `/media?path=${encodeURIComponent(data.path)}`;
+            }
         }
     }
+}
+
+function generateSplitPreview() {
+    const inputPath = document.getElementById('split-input').value;
+    const partsCount = parseInt(document.getElementById('split-parts').value);
+    const container = document.getElementById('split-video-container');
+    const section = document.getElementById('split-preview-section');
+    
+    if (!inputPath || isNaN(partsCount) || partsCount < 2) {
+        section.style.display = 'none';
+        return;
+    }
+    
+    section.style.display = 'block';
+    container.innerHTML = ''; // Очистка
+    
+    const flexBasis = `calc(${100 / partsCount}% - 10px)`;
+    
+    for (let i = 0; i < partsCount; i++) {
+        const wrapper = document.createElement('div');
+        wrapper.className = 'split-part-wrapper';
+        wrapper.style.display = 'flex';
+        wrapper.style.flexDirection = 'column';
+        wrapper.style.alignItems = 'center';
+        wrapper.style.width = flexBasis;
+        wrapper.style.minWidth = '50px';
+        wrapper.style.backgroundColor = 'rgba(255, 255, 255, 0.05)';
+        wrapper.style.padding = '5px';
+        wrapper.style.borderRadius = '8px';
+        wrapper.style.boxSizing = 'border-box';
+        
+        const videoClipWrapper = document.createElement('div');
+        videoClipWrapper.style.position = 'relative';
+        videoClipWrapper.style.width = '100%';
+        videoClipWrapper.style.overflow = 'hidden';
+        videoClipWrapper.style.backgroundColor = '#000';
+        videoClipWrapper.style.borderRadius = '4px';
+        videoClipWrapper.style.aspectRatio = '16/9';
+        
+        const video = document.createElement('video');
+        video.src = `/media?path=${encodeURIComponent(inputPath)}`;
+        video.controls = false;
+        video.className = 'split-preview-video';
+        
+        // CSS Crop Trick
+        video.style.position = 'absolute';
+        video.style.top = '0';
+        video.style.left = `-${i * 100}%`;
+        video.style.width = `${partsCount * 100}%`;
+        video.style.height = '100%';
+        video.style.objectFit = 'cover';
+        
+        videoClipWrapper.appendChild(video);
+        
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.className = 'split-part-name';
+        input.value = `part${i+1}`;
+        input.style.marginTop = '8px';
+        input.style.width = '100%';
+        input.style.textAlign = 'center';
+        input.style.fontSize = '12px';
+        
+        wrapper.appendChild(videoClipWrapper);
+        wrapper.appendChild(input);
+        container.appendChild(wrapper);
+    }
+}
+
+function playSplitVideos() {
+    document.querySelectorAll('.split-preview-video').forEach(vid => vid.play());
+}
+
+function pauseSplitVideos() {
+    document.querySelectorAll('.split-preview-video').forEach(vid => vid.pause());
+}
+
+function stopSplitVideos() {
+    document.querySelectorAll('.split-preview-video').forEach(vid => {
+        vid.pause();
+        vid.currentTime = 0;
+    });
 }
 
 async function browseOutput(inputId, ext = '.mp4') {
@@ -148,10 +234,14 @@ async function startProcess(type) {
         };
     } else if (type === 'split') {
         url = '/api/split_video';
+        const nameInputs = document.querySelectorAll('.split-part-name');
+        const customNames = Array.from(nameInputs).map(inp => inp.value.trim());
+        
         payload = {
             input: document.getElementById('split-input').value,
             output_dir: document.getElementById('split-output').value,
-            parts: document.getElementById('split-parts').value
+            parts: document.getElementById('split-parts').value,
+            custom_names: customNames
         };
     } else if (type === 'compose') {
         url = '/api/compose';
@@ -253,12 +343,14 @@ function updateMultiLayout() {
     
     if (layout === 'row') {
         container.style.flexWrap = 'nowrap';
-        container.style.overflowX = 'auto';
-        container.style.justifyContent = 'flex-start';
+        container.style.overflowX = 'hidden';
+        container.style.justifyContent = 'center';
+        const count = wrappers.length;
+        const flexBasis = count > 1 ? `calc(${100 / count}% - 10px)` : '100%';
         wrappers.forEach(w => {
-            w.style.width = '300px';
-            w.style.minWidth = '300px';
-            w.style.flexShrink = '0';
+            w.style.width = flexBasis;
+            w.style.minWidth = '50px';
+            w.style.flexShrink = '1';
         });
     } else {
         container.style.flexWrap = 'wrap';

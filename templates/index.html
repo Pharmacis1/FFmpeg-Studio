@@ -78,7 +78,7 @@
                 <label>Исходное видео:</label>
                 <div class="file-input-group">
                     <input type="text" id="split-input" readonly placeholder="Выберите файл...">
-                    <button class="btn-secondary" onclick="browseInput('split-input', 'video')">Обзор</button>
+                    <button class="btn-secondary" onclick="browseInput('split-input', 'video', true)">Обзор</button>
                 </div>
             </div>
             <div class="form-group">
@@ -90,9 +90,22 @@
             </div>
             <div class="form-group">
                 <label>Количество частей:</label>
-                <input type="number" id="split-parts" value="4" min="2" max="10">
+                <input type="number" id="split-parts" value="4" min="2" max="10" onchange="generateSplitPreview()">
             </div>
-            <button class="btn-primary" onclick="startProcess('split')">Разрезать</button>
+
+            <div id="split-preview-section" style="display: none; margin-top: 20px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 15px;">
+                <h3>Предпросмотр нарезки</h3>
+                <div style="text-align: center; margin-bottom: 15px;">
+                    <button class="btn-primary" onclick="playSplitVideos()">▶ Воспроизвести все</button>
+                    <button class="btn-secondary" onclick="pauseSplitVideos()">⏸ Пауза</button>
+                    <button class="btn-secondary" onclick="stopSplitVideos()">⏹ Стоп</button>
+                </div>
+                <div class="multi-video-container" id="split-video-container" style="display: flex; gap: 10px; flex-wrap: nowrap; overflow-x: hidden; justify-content: center;">
+                    <!-- Динамически добавляемые видео -->
+                </div>
+            </div>
+
+            <button class="btn-primary" style="margin-top: 15px;" onclick="startProcess('split')">Разрезать</button>
         </div>
 
         <div class="tab-content" id="compose">
