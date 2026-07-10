@@ -99,38 +99,12 @@
         </div>
 
         <nav class="tabs">
-            <button class="tab-btn active" data-target="multi">Мульти-плеер</button>
-            <button class="tab-btn" data-target="convert">Конвертация</button>
+            <button class="tab-btn active" data-target="convert">Конвертация</button>
             <button class="tab-btn" data-target="split">Сплит (Видеостена)</button>
+            <button class="tab-btn" data-target="multi">Мульти-плеер</button>
         </nav>
 
-        <div class="tab-content active" id="multi">
-            <h2>Синхронный просмотр выбранных файлов</h2>
-            <p style="color: #94a3b8; font-size: 13px; margin-bottom: 15px;">
-                Здесь отображаются только те файлы, которые вы <b>выделили</b> в блоке "Исходные медиафайлы".
-            </p>
-            
-            <div class="form-group" style="display: flex; justify-content: space-between; align-items: center;">
-                <div style="display: flex; gap: 10px; align-items: center;">
-                    <label style="margin: 0;">Расположение:</label>
-                    <select id="multi-layout" onchange="updateMultiLayout()" style="margin: 0; width: auto;">
-                        <option value="row">В один ряд</option>
-                        <option value="grid">Сетка</option>
-                    </select>
-                </div>
-                <div style="display: flex; gap: 10px;">
-                    <button class="btn-primary" onclick="playAllVideos()">▶ Воспроизвести все</button>
-                    <button class="btn-secondary" onclick="pauseAllVideos()">⏸ Пауза</button>
-                    <button class="btn-secondary" onclick="stopAllVideos()">⏹ Стоп</button>
-                </div>
-            </div>
-
-            <div class="multi-video-container" id="multi-video-container" style="display: flex; gap: 10px; margin-top: 20px; flex-wrap: wrap; justify-content: center;">
-                <!-- Динамически добавляемые видео для мультиплеера -->
-            </div>
-        </div>
-
-        <div class="tab-content" id="convert">
+        <div class="tab-content active" id="convert">
             <h2>Конвертация и сжатие выбранных видео</h2>
             <div class="form-group">
                 <label>Куда сохранить (выберите папку):</label>
@@ -158,6 +132,15 @@
                     <option value="30">30</option>
                     <option value="50">50</option>
                     <option value="60">60</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Масштаб (Разрешение):</label>
+                <select id="conv-scale">
+                    <option value="">Без изменений</option>
+                    <option value="1920:1080">1920x1080 (Горизонтальное)</option>
+                    <option value="1080:1920">1080x1920 (Вертикальное)</option>
                 </select>
             </div>
 
@@ -191,6 +174,32 @@
             </div>
 
             <button class="btn-primary" style="margin-top: 15px;" onclick="startProcess('split')">Разрезать</button>
+        </div>
+
+        <div class="tab-content" id="multi">
+            <h2>Синхронный просмотр выбранных файлов</h2>
+            <p style="color: #94a3b8; font-size: 13px; margin-bottom: 15px;">
+                Здесь отображаются только те файлы, которые вы <b>выделили</b> в блоке "Исходные медиафайлы".
+            </p>
+            
+            <div class="form-group" style="display: flex; justify-content: space-between; align-items: center;">
+                <div style="display: flex; gap: 10px; align-items: center;">
+                    <label style="margin: 0;">Расположение:</label>
+                    <select id="multi-layout" onchange="updateMultiLayout()" style="margin: 0; width: auto;">
+                        <option value="row">В один ряд</option>
+                        <option value="grid">Сетка</option>
+                    </select>
+                </div>
+                <div style="display: flex; gap: 10px;">
+                    <button class="btn-primary" onclick="playAllVideos()">▶ Воспроизвести все</button>
+                    <button class="btn-secondary" onclick="pauseAllVideos()">⏸ Пауза</button>
+                    <button class="btn-secondary" onclick="stopAllVideos()">⏹ Стоп</button>
+                </div>
+            </div>
+
+            <div class="multi-video-container" id="multi-video-container" style="display: flex; gap: 10px; margin-top: 20px; flex-wrap: wrap; justify-content: center;">
+                <!-- Динамически добавляемые видео для мультиплеера -->
+            </div>
         </div>
 
         <div id="loader" class="loader-container" style="display: none;">

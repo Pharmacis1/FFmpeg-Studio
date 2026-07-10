@@ -115,6 +115,7 @@ def convert():
     quality = data.get('quality', '23')
     remove_audio = data.get('remove_audio', False)
     fps = data.get('fps', '')
+    scale = data.get('scale', '')
     
     if not inputs or not output_dir:
         return jsonify({"success": False, "message": "Выберите файлы и папку для сохранения"})
@@ -128,6 +129,10 @@ def convert():
         output_file = os.path.join(output_dir, out_name)
         
         cmd = [FFMPEG_EXE, '-y', '-i', input_file, '-vcodec', 'libx264', '-crf', str(quality)]
+        if scale:
+            w, h = scale.split(':')
+            filter_str = f"scale={w}:{h}:force_original_aspect_ratio=decrease,pad={w}:{h}:(ow-iw)/2:(oh-ih)/2"
+            cmd.extend(['-vf', filter_str])
         if remove_audio:
             cmd.append('-an')
         if fps:

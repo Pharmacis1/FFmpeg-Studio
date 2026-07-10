@@ -327,7 +327,8 @@ async function startProcess(type) {
             output_dir: document.getElementById('conv-output').value,
             quality: document.getElementById('conv-quality').value,
             remove_audio: document.getElementById('conv-remove-audio').checked,
-            fps: document.getElementById('conv-fps').value
+            fps: document.getElementById('conv-fps').value,
+            scale: document.getElementById('conv-scale').value
         };
     } else if (type === 'split') {
         url = '/api/split_video';

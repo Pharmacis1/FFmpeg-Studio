@@ -8,6 +8,7 @@ body {
     align-items: flex-start;
     min-height: 100vh;
     overflow-y: auto;
+    overflow-x: hidden;
     padding: 40px 20px;
     box-sizing: border-box;
 }
