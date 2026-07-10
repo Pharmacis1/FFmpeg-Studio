@@ -1,75 +1,189 @@
-let globalInputFiles = [];
+let globalFiles = [];
 
 document.querySelectorAll('.tab-btn').forEach(btn => {
     btn.addEventListener('click', () => {
-        // Убираем active со всех
         document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
         document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
         
-        // Добавляем active на текущий
         btn.classList.add('active');
-        document.getElementById(btn.dataset.target).classList.add('active');
+        const targetId = btn.dataset.target;
+        document.getElementById(targetId).classList.add('active');
+        
+        // Refresh views based on selected files when tab changes
+        if (targetId === 'multi') {
+            updateMultiPlayer();
+        } else if (targetId === 'split') {
+            generateSplitPreview();
+        }
     });
 });
 
-async function browseGlobalInputs() {
+async function addGlobalInputs() {
     const res = await fetch(`/api/browse_multiple_inputs?type=video`);
     const data = await res.json();
     if (data.paths && data.paths.length > 0) {
-        document.getElementById('global-input').value = `Выбрано файлов: ${data.paths.length}`;
-        globalInputFiles = data.paths;
-        
-        document.getElementById('global-layout-control').style.display = 'block';
-        document.getElementById('global-playback-controls').style.display = 'block';
-        
-        const container = document.getElementById('global-video-container');
-        container.innerHTML = ''; // Очистка предыдущих
-        
-        globalInputFiles.forEach((path, index) => {
-            const wrapper = document.createElement('div');
-            wrapper.className = 'video-wrapper';
-            wrapper.draggable = true;
-            wrapper.dataset.index = index;
-            wrapper.dataset.path = path;
-            wrapper.style.display = 'flex';
-            wrapper.style.flexDirection = 'column';
-            wrapper.style.alignItems = 'center';
-            wrapper.style.backgroundColor = 'rgba(255, 255, 255, 0.05)';
-            wrapper.style.padding = '10px';
-            wrapper.style.borderRadius = '8px';
-            wrapper.style.cursor = 'grab';
-            wrapper.style.boxSizing = 'border-box';
-            
-            wrapper.addEventListener('dragstart', handleDragStart);
-            wrapper.addEventListener('dragover', handleDragOver);
-            wrapper.addEventListener('drop', handleDrop);
-            wrapper.addEventListener('dragenter', handleDragEnter);
-            wrapper.addEventListener('dragleave', handleDragLeave);
-            wrapper.addEventListener('dragend', handleDragEnd);
+        // Append new paths, avoiding duplicates if desired, but let's just append
+        data.paths.forEach(p => {
+            if (!globalFiles.includes(p)) {
+                globalFiles.push(p);
+            }
+        });
+        renderGlobalFiles();
+    }
+}
 
+function renderGlobalFiles() {
+    const container = document.getElementById('global-files-grid');
+    const emptyText = document.getElementById('global-empty-text');
+    
+    // Preserve selection state by path
+    const currentlySelected = Array.from(document.querySelectorAll('.global-file-item.selected')).map(el => el.dataset.path);
+    
+    container.innerHTML = '';
+    
+    if (globalFiles.length === 0) {
+        emptyText.style.display = 'block';
+    } else {
+        emptyText.style.display = 'none';
+        
+        globalFiles.forEach(path => {
+            const item = document.createElement('div');
+            item.className = 'global-file-item';
+            
+            // If it was selected before, keep it selected. If it's new, select it by default.
+            if (currentlySelected.includes(path) || !currentlySelected.length) {
+                // Wait, if currentlySelected is empty, it means we might have unselected everything, 
+                // but for newly added files, let's just select them by default if we want.
+                // Let's make a simple rule: everything is selected by default if we just re-rendered 
+                // without previous selections.
+            }
+            // Better: always select new files, preserve old selections.
+            if (currentlySelected.includes(path) || !document.querySelector('.global-file-item')) {
+                 item.classList.add('selected');
+            } else if (!currentlySelected.includes(path) && currentlySelected.length > 0) {
+                // it's a new file? actually it wasn't selected. Wait, if it wasn't rendered, it wasn't selected.
+                // Let's just default to selected for any new file.
+                // Wait, if it's already in globalFiles but was unselected, it shouldn't become selected.
+            }
+            
+            item.dataset.path = path;
+            
+            // Toggle selection on click
+            item.addEventListener('click', (e) => {
+                if (e.target.closest('.remove-file-btn')) return; // ignore click on remove btn
+                item.classList.toggle('selected');
+                refreshDependentViews();
+            });
+            
+            const removeBtn = document.createElement('button');
+            removeBtn.className = 'remove-file-btn';
+            removeBtn.innerHTML = '✕';
+            removeBtn.title = 'Удалить';
+            removeBtn.onclick = (e) => {
+                e.stopPropagation();
+                globalFiles = globalFiles.filter(p => p !== path);
+                renderGlobalFiles();
+                refreshDependentViews();
+            };
+            
             const video = document.createElement('video');
             video.src = `/media?path=${encodeURIComponent(path)}`;
-            video.controls = false;
-            video.style.width = '100%';
-            video.style.backgroundColor = '#000';
-            video.style.borderRadius = '4px';
-            video.className = 'synced-video';
+            video.className = 'global-file-video';
+            video.muted = true;
             
-            const title = document.createElement('span');
-            title.innerText = path.split('\\').pop().split('/').pop();
-            title.style.marginTop = '8px';
-            title.style.fontSize = '12px';
-            title.style.color = '#cbd5e1';
-            title.style.wordBreak = 'break-all';
-            title.style.textAlign = 'center';
-
-            wrapper.appendChild(video);
-            wrapper.appendChild(title);
-            container.appendChild(wrapper);
+            // Try to seek to 1 second to get a thumbnail
+            video.addEventListener('loadeddata', () => {
+                video.currentTime = 1;
+            });
+            
+            const title = document.createElement('div');
+            title.className = 'global-file-name';
+            title.title = path.split('\\').pop().split('/').pop();
+            title.innerText = title.title;
+            
+            item.appendChild(removeBtn);
+            item.appendChild(video);
+            item.appendChild(title);
+            
+            container.appendChild(item);
+            
+            // Select by default if it's newly added and we just created the element
+            if (!currentlySelected.includes(path) && !item.classList.contains('selected')) {
+                // If the user adds a new file, let's make it selected automatically.
+                // But only if it's really new. We can track it by maintaining a Set of known files.
+                // For simplicity, let's select all new files.
+                item.classList.add('selected');
+            }
         });
-        updateMultiLayout();
-        generateSplitPreview(); // Обновляем сплит-превью
     }
+    
+    refreshDependentViews();
+}
+
+function getSelectedFiles() {
+    return Array.from(document.querySelectorAll('.global-file-item.selected')).map(el => el.dataset.path);
+}
+
+function refreshDependentViews() {
+    const activeTab = document.querySelector('.tab-btn.active').dataset.target;
+    if (activeTab === 'multi') {
+        updateMultiPlayer();
+    } else if (activeTab === 'split') {
+        generateSplitPreview();
+    }
+}
+
+function updateMultiPlayer() {
+    const container = document.getElementById('multi-video-container');
+    if (!container) return;
+    
+    const selectedFiles = getSelectedFiles();
+    container.innerHTML = '';
+    
+    selectedFiles.forEach((path, index) => {
+        const wrapper = document.createElement('div');
+        wrapper.className = 'video-wrapper';
+        wrapper.draggable = true;
+        wrapper.dataset.index = index;
+        wrapper.dataset.path = path;
+        wrapper.style.display = 'flex';
+        wrapper.style.flexDirection = 'column';
+        wrapper.style.alignItems = 'center';
+        wrapper.style.backgroundColor = 'rgba(255, 255, 255, 0.05)';
+        wrapper.style.padding = '10px';
+        wrapper.style.borderRadius = '8px';
+        wrapper.style.cursor = 'grab';
+        wrapper.style.boxSizing = 'border-box';
+        
+        wrapper.addEventListener('dragstart', handleDragStart);
+        wrapper.addEventListener('dragover', handleDragOver);
+        wrapper.addEventListener('drop', handleDrop);
+        wrapper.addEventListener('dragenter', handleDragEnter);
+        wrapper.addEventListener('dragleave', handleDragLeave);
+        wrapper.addEventListener('dragend', handleDragEnd);
+
+        const video = document.createElement('video');
+        video.src = `/media?path=${encodeURIComponent(path)}`;
+        video.controls = false;
+        video.style.width = '100%';
+        video.style.backgroundColor = '#000';
+        video.style.borderRadius = '4px';
+        video.className = 'synced-video';
+        
+        const title = document.createElement('span');
+        title.innerText = path.split('\\').pop().split('/').pop();
+        title.style.marginTop = '8px';
+        title.style.fontSize = '12px';
+        title.style.color = '#cbd5e1';
+        title.style.wordBreak = 'break-all';
+        title.style.textAlign = 'center';
+
+        wrapper.appendChild(video);
+        wrapper.appendChild(title);
+        container.appendChild(wrapper);
+    });
+    
+    updateMultiLayout();
 }
 
 function generateSplitPreview() {
@@ -77,26 +191,24 @@ function generateSplitPreview() {
     const wrapperContainer = document.getElementById('split-videos-wrapper');
     const section = document.getElementById('split-preview-section');
     
-    // globalInputFiles takes precedence. Note that drag-and-drop reorders DOM, we should read order from DOM.
-    const currentGlobalWrappers = Array.from(document.querySelectorAll('#global-video-container .video-wrapper'));
-    const orderedFiles = currentGlobalWrappers.map(w => w.dataset.path);
+    const selectedFiles = getSelectedFiles();
     
-    if (orderedFiles.length === 0 || isNaN(partsCount) || partsCount < 2) {
+    if (selectedFiles.length === 0 || isNaN(partsCount) || partsCount < 2) {
         section.style.display = 'none';
         return;
     }
     
     section.style.display = 'block';
-    wrapperContainer.innerHTML = ''; // Очистка
+    wrapperContainer.innerHTML = '';
     
     const flexBasis = `calc(${100 / partsCount}% - 10px)`;
     
-    orderedFiles.forEach((inputPath, fileIndex) => {
+    selectedFiles.forEach((inputPath) => {
         const fileBlock = document.createElement('div');
         fileBlock.style.backgroundColor = 'rgba(255, 255, 255, 0.03)';
         fileBlock.style.padding = '10px';
         fileBlock.style.borderRadius = '12px';
-        fileBlock.dataset.path = inputPath; // save path for later retrieval
+        fileBlock.dataset.path = inputPath;
         fileBlock.className = 'split-file-block';
         
         const title = document.createElement('h4');
@@ -139,7 +251,6 @@ function generateSplitPreview() {
             video.controls = false;
             video.className = 'split-preview-video';
             
-            // CSS Crop Trick
             video.style.position = 'absolute';
             video.style.top = '0';
             video.style.left = `-${i * 100}%`;
@@ -168,25 +279,13 @@ function generateSplitPreview() {
     });
 }
 
-function playAllVideos() {
-    document.querySelectorAll('.synced-video').forEach(vid => vid.play());
-}
-function pauseAllVideos() {
-    document.querySelectorAll('.synced-video').forEach(vid => vid.pause());
-}
-function stopAllVideos() {
-    document.querySelectorAll('.synced-video').forEach(vid => { vid.pause(); vid.currentTime = 0; });
-}
+function playAllVideos() { document.querySelectorAll('.synced-video').forEach(vid => vid.play()); }
+function pauseAllVideos() { document.querySelectorAll('.synced-video').forEach(vid => vid.pause()); }
+function stopAllVideos() { document.querySelectorAll('.synced-video').forEach(vid => { vid.pause(); vid.currentTime = 0; }); }
 
-function playSplitVideos() {
-    document.querySelectorAll('.split-preview-video').forEach(vid => vid.play());
-}
-function pauseSplitVideos() {
-    document.querySelectorAll('.split-preview-video').forEach(vid => vid.pause());
-}
-function stopSplitVideos() {
-    document.querySelectorAll('.split-preview-video').forEach(vid => { vid.pause(); vid.currentTime = 0; });
-}
+function playSplitVideos() { document.querySelectorAll('.split-preview-video').forEach(vid => vid.play()); }
+function pauseSplitVideos() { document.querySelectorAll('.split-preview-video').forEach(vid => vid.pause()); }
+function stopSplitVideos() { document.querySelectorAll('.split-preview-video').forEach(vid => { vid.pause(); vid.currentTime = 0; }); }
 
 async function browseOutputDir(inputId) {
     const res = await fetch(`/api/browse_output_dir`);
@@ -207,12 +306,10 @@ function showMessage(text, isError = false) {
 }
 
 async function startProcess(type) {
-    // Collect ordered files from global preview container
-    const currentGlobalWrappers = Array.from(document.querySelectorAll('#global-video-container .video-wrapper'));
-    const orderedFiles = currentGlobalWrappers.map(w => w.dataset.path);
+    const selectedFiles = getSelectedFiles();
     
-    if (orderedFiles.length === 0) {
-        showMessage('Выберите хотя бы один медиафайл', true);
+    if (selectedFiles.length === 0) {
+        showMessage('Выберите (выделите) хотя бы один медиафайл', true);
         return;
     }
 
@@ -226,7 +323,7 @@ async function startProcess(type) {
     if (type === 'convert') {
         url = '/api/convert';
         payload = {
-            inputs: orderedFiles,
+            inputs: selectedFiles,
             output_dir: document.getElementById('conv-output').value,
             quality: document.getElementById('conv-quality').value,
             remove_audio: document.getElementById('conv-remove-audio').checked,
@@ -284,6 +381,7 @@ async function shutdownApp() {
     }
 }
 
+// Drag and drop for multi-player synced videos
 let draggedItem = null;
 
 function handleDragStart(e) {
@@ -292,27 +390,14 @@ function handleDragStart(e) {
     e.dataTransfer.setData('text/plain', this.dataset.index);
     setTimeout(() => this.style.opacity = '0.4', 0);
 }
-
-function handleDragOver(e) {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = 'move';
-    return false;
-}
-
-function handleDragEnter(e) {
-    e.preventDefault();
-    this.style.border = '2px dashed #f87171';
-}
-
-function handleDragLeave(e) {
-    this.style.border = 'none';
-}
-
+function handleDragOver(e) { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; return false; }
+function handleDragEnter(e) { e.preventDefault(); this.style.border = '2px dashed #f87171'; }
+function handleDragLeave(e) { this.style.border = 'none'; }
 function handleDrop(e) {
     e.stopPropagation();
     this.style.border = 'none';
     if (draggedItem !== this) {
-        const container = document.getElementById('global-video-container');
+        const container = document.getElementById('multi-video-container');
         const allItems = [...container.querySelectorAll('.video-wrapper')];
         const draggedIndex = allItems.indexOf(draggedItem);
         const targetIndex = allItems.indexOf(this);
@@ -322,23 +407,17 @@ function handleDrop(e) {
         } else {
             this.parentNode.insertBefore(draggedItem, this);
         }
-        
-        // Re-generate split preview based on new order
-        generateSplitPreview();
     }
     return false;
 }
-
 function handleDragEnd(e) {
     this.style.opacity = '1';
-    document.querySelectorAll('.video-wrapper').forEach(item => {
-        item.style.border = 'none';
-    });
+    document.querySelectorAll('.video-wrapper').forEach(item => { item.style.border = 'none'; });
 }
 
 function updateMultiLayout() {
     const layout = document.getElementById('multi-layout') ? document.getElementById('multi-layout').value : 'row';
-    const container = document.getElementById('global-video-container');
+    const container = document.getElementById('multi-video-container');
     if (!container) return;
     
     const wrappers = container.querySelectorAll('.video-wrapper');

@@ -6,6 +6,72 @@
     <title>FFmpeg Studio</title>
     <link rel="stylesheet" href="/static/style.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+    <style>
+        .global-file-item {
+            position: relative;
+            background-color: rgba(255, 255, 255, 0.05);
+            padding: 8px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 2px solid transparent;
+            width: 120px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .global-file-item.selected {
+            border-color: #3b82f6;
+            background-color: rgba(59, 130, 246, 0.1);
+        }
+        .global-file-item:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+        .global-file-item.selected:hover {
+            background-color: rgba(59, 130, 246, 0.2);
+        }
+        .remove-file-btn {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            background: #ef4444;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            font-size: 12px;
+            line-height: 1;
+            cursor: pointer;
+            z-index: 10;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .remove-file-btn:hover {
+            background: #dc2626;
+        }
+        .global-file-video {
+            width: 100%;
+            height: 60px;
+            background: #000;
+            border-radius: 4px;
+            object-fit: cover;
+            pointer-events: none;
+        }
+        .global-file-name {
+            margin-top: 6px;
+            font-size: 11px;
+            color: #cbd5e1;
+            text-align: center;
+            word-break: break-all;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            pointer-events: none;
+        }
+    </style>
 </head>
 <body>
     <div class="background-anim"></div>
@@ -18,41 +84,54 @@
         </header>
 
         <!-- Global Input Block -->
-        <div id="global-input-section" style="margin-bottom: 30px; border-bottom: 1px solid rgba(255, 255, 255, 0.1); padding-bottom: 20px;">
-            <h2>Исходные медиафайлы</h2>
-            <div class="form-group">
-                <div class="file-input-group">
-                    <input type="text" id="global-input" readonly placeholder="Выберите видеофайлы (один или несколько)...">
-                    <button class="btn-secondary" onclick="browseGlobalInputs()">Обзор</button>
-                </div>
+        <div id="global-input-section" style="margin-bottom: 20px; border-bottom: 1px solid rgba(255, 255, 255, 0.1); padding-bottom: 20px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                <h2 style="margin: 0;">Исходные медиафайлы</h2>
+                <button class="btn-secondary" onclick="addGlobalInputs()">+ Добавить файлы</button>
             </div>
             
-            <div class="form-group" style="margin-top: 15px; display: none;" id="global-layout-control">
-                <label>Расположение предпросмотра:</label>
-                <select id="multi-layout" onchange="updateMultiLayout()">
-                    <option value="row">В один ряд</option>
-                    <option value="grid">Сетка (автоматически)</option>
-                </select>
+            <div id="global-files-grid" style="display: flex; flex-wrap: wrap; gap: 15px; margin-top: 10px;">
+                <!-- Добавленные файлы будут здесь -->
             </div>
-
-            <div style="text-align: center; margin-top: 15px; display: none;" id="global-playback-controls">
-                <button class="btn-primary" onclick="playAllVideos()">▶ Воспроизвести все</button>
-                <button class="btn-secondary" onclick="pauseAllVideos()">⏸ Пауза</button>
-                <button class="btn-secondary" onclick="stopAllVideos()">⏹ Стоп</button>
-            </div>
-
-            <div class="multi-video-container" id="global-video-container" style="display: flex; gap: 10px; margin-top: 20px; flex-wrap: wrap; justify-content: center;">
-                <!-- Динамически добавляемые видео -->
-            </div>
+            <p id="global-empty-text" style="color: #94a3b8; font-size: 14px; text-align: center; margin-top: 15px;">
+                Нет добавленных файлов. Нажмите "+ Добавить файлы", чтобы начать.
+            </p>
         </div>
 
         <nav class="tabs">
-            <button class="tab-btn active" data-target="convert">Конвертация</button>
+            <button class="tab-btn active" data-target="multi">Мульти-плеер</button>
+            <button class="tab-btn" data-target="convert">Конвертация</button>
             <button class="tab-btn" data-target="split">Сплит (Видеостена)</button>
         </nav>
 
-        <div class="tab-content active" id="convert">
-            <h2>Конвертация и сжатие видео</h2>
+        <div class="tab-content active" id="multi">
+            <h2>Синхронный просмотр выбранных файлов</h2>
+            <p style="color: #94a3b8; font-size: 13px; margin-bottom: 15px;">
+                Здесь отображаются только те файлы, которые вы <b>выделили</b> в блоке "Исходные медиафайлы".
+            </p>
+            
+            <div class="form-group" style="display: flex; justify-content: space-between; align-items: center;">
+                <div style="display: flex; gap: 10px; align-items: center;">
+                    <label style="margin: 0;">Расположение:</label>
+                    <select id="multi-layout" onchange="updateMultiLayout()" style="margin: 0; width: auto;">
+                        <option value="row">В один ряд</option>
+                        <option value="grid">Сетка</option>
+                    </select>
+                </div>
+                <div style="display: flex; gap: 10px;">
+                    <button class="btn-primary" onclick="playAllVideos()">▶ Воспроизвести все</button>
+                    <button class="btn-secondary" onclick="pauseAllVideos()">⏸ Пауза</button>
+                    <button class="btn-secondary" onclick="stopAllVideos()">⏹ Стоп</button>
+                </div>
+            </div>
+
+            <div class="multi-video-container" id="multi-video-container" style="display: flex; gap: 10px; margin-top: 20px; flex-wrap: wrap; justify-content: center;">
+                <!-- Динамически добавляемые видео для мультиплеера -->
+            </div>
+        </div>
+
+        <div class="tab-content" id="convert">
+            <h2>Конвертация и сжатие выбранных видео</h2>
             <div class="form-group">
                 <label>Куда сохранить (выберите папку):</label>
                 <div class="file-input-group">
@@ -65,7 +144,6 @@
                 <input type="range" id="conv-quality" min="0" max="51" value="23" oninput="document.getElementById('crf-val').innerText=this.value">
             </div>
             
-            <!-- New settings -->
             <div class="form-group" style="display: flex; align-items: center; gap: 10px;">
                 <input type="checkbox" id="conv-remove-audio" style="width: 20px; height: 20px;">
                 <label for="conv-remove-audio" style="margin-bottom: 0;">Удалить аудио (без звука)</label>
@@ -87,7 +165,7 @@
         </div>
 
         <div class="tab-content" id="split">
-            <h2>Нарезка видео по горизонтали</h2>
+            <h2>Нарезка выбранных видео по горизонтали</h2>
             <div class="form-group">
                 <label>Папка для сохранения частей:</label>
                 <div class="file-input-group">
@@ -96,7 +174,7 @@
                 </div>
             </div>
             <div class="form-group">
-                <label>Количество частей (для всех файлов):</label>
+                <label>Количество частей (для каждого файла):</label>
                 <input type="number" id="split-parts" value="4" min="2" max="10" onchange="generateSplitPreview()">
             </div>
 
