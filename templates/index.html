@@ -27,6 +27,7 @@
             <button class="tab-btn" data-target="audio">Звук</button>
             <button class="tab-btn" data-target="split">Сплит (Видеостена)</button>
             <button class="tab-btn" data-target="compose">Картинка + Видео</button>
+            <button class="tab-btn" data-target="multi-preview">Мульти-плеер</button>
         </nav>
 
         <div class="tab-content active" id="convert">
@@ -125,6 +126,27 @@
                 </div>
             </div>
             <button class="btn-primary" onclick="startProcess('compose')">Создать</button>
+        </div>
+
+        <div class="tab-content" id="multi-preview">
+            <h2>Синхронный просмотр нескольких видео</h2>
+            <div class="form-group">
+                <label>Выберите видеофайлы:</label>
+                <div class="file-input-group">
+                    <input type="text" id="multi-preview-input" readonly placeholder="Выберите несколько файлов...">
+                    <button class="btn-secondary" onclick="browseMultipleInputs()">Обзор</button>
+                </div>
+            </div>
+            
+            <div style="text-align: center; margin-top: 15px;">
+                <button class="btn-primary" onclick="playAllVideos()">▶ Воспроизвести все</button>
+                <button class="btn-secondary" onclick="pauseAllVideos()">⏸ Пауза</button>
+                <button class="btn-secondary" onclick="stopAllVideos()">⏹ Стоп</button>
+            </div>
+
+            <div class="multi-video-container" id="multi-video-container" style="display: flex; gap: 10px; margin-top: 20px; flex-wrap: wrap; justify-content: center;">
+                <!-- Динамически добавляемые видео -->
+            </div>
         </div>
 
         <div id="loader" class="loader-container" style="display: none;">

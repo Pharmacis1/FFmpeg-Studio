@@ -46,6 +46,44 @@ async function browseOutputDir(inputId) {
     }
 }
 
+async function browseMultipleInputs() {
+    const res = await fetch(`/api/browse_multiple_inputs?type=video`);
+    const data = await res.json();
+    if (data.paths && data.paths.length > 0) {
+        document.getElementById('multi-preview-input').value = `Выбрано файлов: ${data.paths.length}`;
+        
+        const container = document.getElementById('multi-video-container');
+        container.innerHTML = ''; // Очистка предыдущих
+        
+        data.paths.forEach(path => {
+            const video = document.createElement('video');
+            video.src = `/media?path=${encodeURIComponent(path)}`;
+            video.controls = false; // Убираем контролы для синхронного управления
+            video.style.width = data.paths.length > 1 ? `calc(${100 / Math.ceil(Math.sqrt(data.paths.length))}% - 10px)` : '100%';
+            video.style.minWidth = '200px';
+            video.style.maxWidth = '100%';
+            video.style.backgroundColor = '#000';
+            video.className = 'synced-video';
+            container.appendChild(video);
+        });
+    }
+}
+
+function playAllVideos() {
+    document.querySelectorAll('.synced-video').forEach(vid => vid.play());
+}
+
+function pauseAllVideos() {
+    document.querySelectorAll('.synced-video').forEach(vid => vid.pause());
+}
+
+function stopAllVideos() {
+    document.querySelectorAll('.synced-video').forEach(vid => {
+        vid.pause();
+        vid.currentTime = 0;
+    });
+}
+
 function showMessage(text, isError = false) {
     const msgEl = document.getElementById('result-message');
     msgEl.innerText = text;

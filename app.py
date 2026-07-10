@@ -28,6 +28,14 @@ def open_file_dialog(title, filetypes):
     root.destroy()
     return file_path
 
+def open_file_dialog_multiple(title, filetypes):
+    root = tk.Tk()
+    root.withdraw()
+    root.attributes('-topmost', True)
+    file_paths = filedialog.askopenfilenames(title=title, filetypes=filetypes)
+    root.destroy()
+    return list(file_paths)
+
 def open_save_dialog(title, defaultextension, filetypes):
     root = tk.Tk()
     root.withdraw()
@@ -52,6 +60,19 @@ def browse_input():
         
     path = open_file_dialog("Выберите исходный файл", filetypes)
     return jsonify({"path": path})
+
+@app.route('/api/browse_multiple_inputs', methods=['GET'])
+def browse_multiple_inputs():
+    filter_type = request.args.get('type', 'video')
+    if filter_type == 'video':
+        filetypes = [("Video files", "*.mp4 *.avi *.mkv *.mov *.wmv")]
+    elif filter_type == 'image':
+        filetypes = [("Image files", "*.jpg *.jpeg *.png")]
+    else:
+        filetypes = [("All files", "*.*")]
+        
+    paths = open_file_dialog_multiple("Выберите исходные файлы", filetypes)
+    return jsonify({"paths": paths})
 
 @app.route('/api/browse_output', methods=['GET'])
 def browse_output():
@@ -143,7 +164,7 @@ def split_video():
     cmd = [FFMPEG_EXE, '-y', '-i', input_file, '-filter_complex', filter_complex[:-1]]
     
     for i in range(parts):
-        cmd.extend(['-map', f'[v{i}]', '-vcodec', 'libx264', '-crf', '23', output_files[i]])
+        cmd.extend(['-map', f'[v{i}]', '-vcodec', 'libx264', '-crf', '23', '-an', '-r', '30', output_files[i]])
         
     success, msg = run_ffmpeg(cmd)
     return jsonify({"success": success, "message": msg})
